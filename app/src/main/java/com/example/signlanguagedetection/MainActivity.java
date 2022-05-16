@@ -19,7 +19,7 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.example.signlanguagedetection.ml.TfLiteSignlanguageModel;
+import com.example.signlanguagedetection.ml.TfLiteSignlanguage64Model;
 
 import org.tensorflow.lite.DataType;
 import org.tensorflow.lite.support.tensorbuffer.TensorBuffer;
@@ -32,9 +32,9 @@ public class MainActivity extends AppCompatActivity {
 
     Button cameraBtn, galleryBtn;
     TextView predictedCharacter;
-    ImageView imageToPredict;
+    ImageView imageToPredict, imageGrey;
     Bitmap bitmap;
-    int imageSize = 28;
+    int imageSize = 64;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -42,6 +42,7 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         imageToPredict = findViewById(R.id.imageToPredict);
+        imageGrey = findViewById(R.id.imageGrey);
         predictedCharacter = findViewById(R.id.predictedCharacter);
         cameraBtn = findViewById(R.id.cameraBtn);
         galleryBtn = findViewById(R.id.galleryBtn);
@@ -95,33 +96,39 @@ public class MainActivity extends AppCompatActivity {
         super.onActivityResult(requestCode, resultCode, data);
     }
 
-    private void classifyImage(Bitmap image) {
+    private void classifyImage(Bitmap bitmap) {
         try {
-            TfLiteSignlanguageModel model = TfLiteSignlanguageModel.newInstance(getApplicationContext());
+            TfLiteSignlanguage64Model model = TfLiteSignlanguage64Model.newInstance(getApplicationContext());
 
             // Creates inputs for reference.
-            TensorBuffer inputFeature0 = TensorBuffer.createFixedSize(new int[]{1, 28, 28, 1}, DataType.FLOAT32);
+            TensorBuffer inputFeature0 = TensorBuffer.createFixedSize(new int[]{1, 64, 64, 1}, DataType.FLOAT32);
             ByteBuffer byteBuffer = ByteBuffer.allocateDirect(4 * imageSize * imageSize * 1);
             byteBuffer.order(ByteOrder.nativeOrder());
 
             int[] intValues = new int[imageSize * imageSize];
-            image.getPixels(intValues, 0, image.getWidth(), 0, 0, image.getWidth(), image.getHeight());
+            bitmap.getPixels(intValues, 0, bitmap.getWidth(), 0, 0, bitmap.getWidth(), bitmap.getHeight());
             int pixel = 0;
-            //iterate over each pixel and extract R, G, and B values. Add those values individually to the byte buffer.
-            /*
+            //iterate over each pixel and extract R, G, and B values. Add the average of these values to get grayscale of the image
+
             for(int i = 0; i < imageSize; i ++){
                 for(int j = 0; j < imageSize; j++){
                     int val = intValues[pixel++]; // RGB
-                    byteBuffer.putFloat(((val >> 16) & 0xFF) * (1.f / 1));
-                    byteBuffer.putFloat(((val >> 8) & 0xFF) * (1.f / 1));
-                    byteBuffer.putFloat((val & 0xFF) * (1.f / 1));
+                    float r = ((val >> 16) & 0xFF) * (1.f / 1);
+                    float g = ((val >> 8) & 0xFF) * (1.f / 1);
+                    float b = (val & 0xFF) * (1.f / 1);
+                    float avg = (r+g+b)/3;
+                    //Toast.makeText(MainActivity.this, avg+" "+ r +" "+ g + " "+ b, Toast.LENGTH_SHORT).show();
+                    byteBuffer.putFloat(avg);
+                    //byteBuffer.putFloat(r);
+                    //byteBuffer.putFloat(g);
+                    //byteBuffer.putFloat(b);
                 }
-            }*/
+            }
 
             inputFeature0.loadBuffer(byteBuffer);
 
             // Runs model inference and gets result.
-            TfLiteSignlanguageModel.Outputs outputs = model.process(inputFeature0);
+            TfLiteSignlanguage64Model.Outputs outputs = model.process(inputFeature0);
             TensorBuffer outputFeature0 = outputs.getOutputFeature0AsTensorBuffer();
 
             float[] confidences = outputFeature0.getFloatArray();
@@ -137,8 +144,13 @@ public class MainActivity extends AppCompatActivity {
                     maxPos = i;
                 }
             }
-            String[] classes = {"0", "1", "2","3", "4", "5","6", "7", "8","10", "11", "12",
-                    "13", "14", "15","16", "17", "18","19", "20", "21","22", "23", "24",};
+            String[] classes = {"A", "B", "C","D", "E", "F","G", "H", "I","J", "K", "L",
+                    "M", "N", "O","P", "Q", "R","S", "T", "U","V", "W", "X","Y", "Z"};
+
+            Bitmap imageBW = Bitmap.createBitmap(bitmap.getWidth(), bitmap.getHeight(), Bitmap.Config.ARGB_8888);
+            bitmap.copyPixelsFromBuffer(byteBuffer);
+            imageGrey.setImageBitmap(imageBW);
+
             predictedCharacter.setText(classes[maxPos]);
 
 
