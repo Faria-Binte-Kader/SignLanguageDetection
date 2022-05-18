@@ -19,7 +19,7 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.example.signlanguagedetection.ml.TfLiteSignlanguage64Model;
+import com.example.signlanguagedetection.ml.TfLiteSignlanguage64Iter20Model;
 
 import org.tensorflow.lite.DataType;
 import org.tensorflow.lite.support.tensorbuffer.TensorBuffer;
@@ -98,7 +98,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void classifyImage(Bitmap bitmap) {
         try {
-            TfLiteSignlanguage64Model model = TfLiteSignlanguage64Model.newInstance(getApplicationContext());
+            TfLiteSignlanguage64Iter20Model model = TfLiteSignlanguage64Iter20Model.newInstance(getApplicationContext());
 
             // Creates inputs for reference.
             TensorBuffer inputFeature0 = TensorBuffer.createFixedSize(new int[]{1, 64, 64, 1}, DataType.FLOAT32);
@@ -128,7 +128,7 @@ public class MainActivity extends AppCompatActivity {
             inputFeature0.loadBuffer(byteBuffer);
 
             // Runs model inference and gets result.
-            TfLiteSignlanguage64Model.Outputs outputs = model.process(inputFeature0);
+            TfLiteSignlanguage64Iter20Model.Outputs outputs = model.process(inputFeature0);
             TensorBuffer outputFeature0 = outputs.getOutputFeature0AsTensorBuffer();
 
             float[] confidences = outputFeature0.getFloatArray();
@@ -152,6 +152,7 @@ public class MainActivity extends AppCompatActivity {
             imageGrey.setImageBitmap(imageBW);
 
             predictedCharacter.setText(classes[maxPos]);
+            Toast.makeText(MainActivity.this, classes[maxPos], Toast.LENGTH_SHORT).show();
 
 
             // Releases model resources if no longer used.
